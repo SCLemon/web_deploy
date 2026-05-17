@@ -20,8 +20,16 @@ cd web_deploy
 npm install --legacy-peer-deps
 
 # 安裝後端依賴
-echo "Installing npm packages for backend..."
-cd backend
+cd projects
+echo "Installing npm packages for backend for skyAcademy..."
+cd skyAcademy
 npm install --legacy-peer-deps
-cd ..
+cd ../
+
+echo "Installing npm packages for backend for moruvi..."
+cd moruvi
+npm install --legacy-peer-deps
+cd ../
+
+
 
