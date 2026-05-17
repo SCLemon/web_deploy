@@ -10,12 +10,12 @@ if [ ! -d "$LOG_DIR" ]; then
 fi
 
 echo "Starting HTTPS server..."
-node ./https.js > "$LOG_DIR/https.log" 2>&1 &
+node ./web_deploy/https.js > "$LOG_DIR/https.log" 2>&1 &
 
 echo "Starting Backend server for skyAcademy..."
-node ./backend/index.js > "$LOG_DIR/skyAcademy_backend.log" 2>&1 &
+node ./web_deploy/projects/skyAcademy/backend/index.js > "$LOG_DIR/skyAcademy_backend.log" 2>&1 &
 
 echo "Starting Backend server for moruvi..."
-node ./backend/index.js > "$LOG_DIR/moruvi_backend.log" 2>&1 &
+node ./web_deploy/projects/moruvi/backend/index.js > "$LOG_DIR/moruvi_backend.log" 2>&1 &
 
 echo "All services started successfully."
