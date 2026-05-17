@@ -22,14 +22,14 @@ npm install --legacy-peer-deps
 # 安裝後端依賴
 cd projects
 echo "Installing npm packages for backend for skyAcademy..."
-cd skyAcademy
+cd skyAcademy/backend
 npm install --legacy-peer-deps
-cd ../
+cd ../../
 
 echo "Installing npm packages for backend for moruvi..."
-cd moruvi
+cd moruvi/backend
 npm install --legacy-peer-deps
-cd ../
+cd ../../
 
 
 
