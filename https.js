@@ -27,7 +27,7 @@ const moruviProxy = createProxyMiddleware({
 const skyStatic = express.static(path.join(__dirname,'projects','skyAcademy','dist'));
 const moruviStatic = express.static(path.join(__dirname,'projects','moruvi','dist'));
 
-const proxyRoutes = ['/api','/login'];
+const proxyRoutes = ['/api/','/login/'];
 
 app.use(proxyRoutes,(req,res,next)=>{
     if(req.hostname === 'moruvi.sclemon1013.com'){
