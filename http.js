@@ -5,47 +5,90 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 80;
 
-const skyProxy = createProxyMiddleware({
-    target:'http://127.0.0.1:3007',
-    changeOrigin:true
+// ==========================================
+// 【核心修正】為了解決 Express 切除前綴的問題
+// 這裡將 3007 與 3008 的 /api/ 和 /login/ 代理全數分開建立
+// 並在 target 尾端補上斜線，確保路徑拼接絕對正確
+// ==========================================
+
+// --- skyAcademy (3007) 代理配置 ---
+const skyApiProxy = createProxyMiddleware({
+    target: 'http://127.0.0.1:3007/api/',
+    changeOrigin: true
 });
 
-const moruviProxy = createProxyMiddleware({
-    target:'http://127.0.0.1:3008',
-    changeOrigin:true
+const skyLoginProxy = createProxyMiddleware({
+    target: 'http://127.0.0.1:3007/login/',
+    changeOrigin: true
 });
 
-const skyStatic = express.static(path.join(__dirname,'projects','skyAcademy','dist'));
-const moruviStatic = express.static(path.join(__dirname,'projects','moruvi','dist'));
+// --- moruvi (3008) 代理配置 ---
+const moruviApiProxy = createProxyMiddleware({
+    target: 'http://127.0.0.1:3008/api/',
+    changeOrigin: true
+});
 
-const proxyRoutes = ['/api/','/login/'];
+const moruviLoginProxy = createProxyMiddleware({
+    target: 'http://127.0.0.1:3008/login/',
+    changeOrigin: true
+});
 
-app.use(proxyRoutes,(req,res,next)=>{
-    if(req.hostname === 'moruvi.sclemon1013.com'){
-        return moruviProxy(req,res,next);
+// 靜態檔案路徑定義
+const skyStatic = express.static(path.join(__dirname, 'projects', 'skyAcademy', 'dist'));
+const moruviStatic = express.static(path.join(__dirname, 'projects', 'moruvi', 'dist'));
+
+
+// ==========================================
+// 【路由代理與多網域分流中間件】
+// ==========================================
+
+// 1. 處理所有 /api/ 開頭的請求
+app.use('/api/', (req, res, next) => {
+    if (req.hostname === 'moruvi.sclemon1013.com') {
+        return moruviApiProxy(req, res, next);
     }
-    return skyProxy(req,res,next);
+    return skyApiProxy(req, res, next);
 });
 
-app.use((req,res,next)=>{
-    if(req.hostname === 'moruvi.sclemon1013.com'){
-        return moruviStatic(req,res,next);
+// 2. 處理所有 /login/ 開頭的請求
+app.use('/login/', (req, res, next) => {
+    if (req.hostname === 'moruvi.sclemon1013.com') {
+        return moruviLoginProxy(req, res, next);
     }
-    return skyStatic(req,res,next);
+    return skyLoginProxy(req, res, next);
 });
 
-app.get('*',(req,res)=>{
-    if(req.hostname === 'moruvi.sclemon1013.com'){
-        return res.sendFile(path.join(__dirname,'projects','moruvi','dist','index.html'));
+
+// ==========================================
+// 【靜態檔案與 SPA 萬用路由處理】
+// ==========================================
+
+// 當請求不是 /api/ 或 /login/ 時，會流到這裡讀取前端打包檔案
+app.use((req, res, next) => {
+    if (req.hostname === 'moruvi.sclemon1013.com') {
+        return moruviStatic(req, res, next);
     }
-    return res.sendFile(path.join(__dirname,'projects','skyAcademy','dist','index.html'));
+    return skyStatic(req, res, next);
 });
 
-app.use((err,req,res,next)=>{
+// 萬用路由：針對 Hash 模式的根路徑 `/` 或前端重新整理時，正確回傳 index.html
+app.get('*', (req, res) => {
+    if (req.hostname === 'moruvi.sclemon1013.com') {
+        return res.sendFile(path.join(__dirname, 'projects', 'moruvi', 'dist', 'index.html'));
+    }
+    return res.sendFile(path.join(__dirname, 'projects', 'skyAcademy', 'dist', 'index.html'));
+});
+
+
+// ==========================================
+// 【錯誤處理與伺服器啟動】
+// ==========================================
+
+app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
 });
 
-app.listen(PORT,'0.0.0.0',()=>{
-    console.log(`Server is running on http://127.0.0.1:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`HTTP Server is running on http://127.0.0.1:${PORT}`);
 });
