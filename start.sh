@@ -10,12 +10,13 @@ if [ ! -d "$LOG_DIR" ]; then
 fi
 
 echo "Starting HTTPS server..."
-node ./web_deploy/https.js > "$LOG_DIR/https.log" 2>&1 &
+# 2>&1 把標準錯誤轉到標準輸出，再透過 tee 寫入檔案並輸出到螢幕，最後在背景執行 (&)
+node ./web_deploy/https.js 2>&1 | tee "$LOG_DIR/https.log" &
 
 echo "Starting Backend server for skyAcademy..."
-node ./web_deploy/projects/skyAcademy/backend/index.js > "$LOG_DIR/skyAcademy_backend.log" 2>&1 &
+node ./web_deploy/projects/skyAcademy/backend/index.js 2>&1 | tee "$LOG_DIR/skyAcademy_backend.log" &
 
 echo "Starting Backend server for moruvi..."
-node ./web_deploy/projects/moruvi/backend/index.js > "$LOG_DIR/moruvi_backend.log" 2>&1 &
+node ./web_deploy/projects/moruvi/backend/index.js 2>&1 | tee "$LOG_DIR/moruvi_backend.log" &
 
 echo "All services started successfully."
