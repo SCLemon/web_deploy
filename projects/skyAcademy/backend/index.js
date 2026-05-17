@@ -1,0 +1,88 @@
+const express = require('express');
+const compression = require('compression');
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+
+app.set('trust proxy', 'loopback, 192.168.0.1'); 
+
+
+const rateLimit = require('express-rate-limit');
+
+// 不受限速
+const whitelistRoutes = [
+    '/api/learn/getCourseBanner',
+    '/api/post/image',
+];
+
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 分鐘
+    max: 200,
+    message: 'Too many requests from this account, please try again after a minute.',
+    keyGenerator: (req, res) => {
+        return req.headers['x-user-token'] || req.headers['x-user-fingerprint'];
+    },
+    skip: (req, res) => {
+        return whitelistRoutes.some(route => req.path.startsWith(route));
+    },
+    handler: (req, res, next, options) => {
+        return res.redirect('/');
+    }
+});
+
+app.use(limiter);
+
+app.use((req, res, next) => {
+  next();
+});
+
+
+// 初始化資料庫
+const { connectToDatabase, disconnectFromDatabase } = require('./db/db');
+connectToDatabase();
+
+process.on('SIGINT', function() {
+    disconnectFromDatabase();
+    process.exit(0);
+});
+
+const adminRouter = require('./routes/adminRouter');
+app.use(adminRouter);
+
+const loginRouter = require('./routes/loginRouter');
+app.use(loginRouter);
+
+const create_columnRouter = require('./routes/create_columnRouter');
+app.use(create_columnRouter);
+
+const create_userRouter = require('./routes/create_userRouter');
+app.use(create_userRouter);
+
+const postRouter = require('./routes/postRouter');
+app.use(postRouter);
+
+const columnRouter = require('./routes/columnRouter');
+app.use(columnRouter);
+
+const userInfoRouter = require('./routes/userInfoRouter');
+app.use(userInfoRouter);
+
+const studyRecordRouter = require('./routes/studyRecordRouter');
+app.use(studyRecordRouter);
+
+const paperRecordRouter = require('./routes/paperRecordRouter');
+app.use(paperRecordRouter);
+
+const {router: serviceWorkerRouter} = require('./routes/service-worker/serviceWorkerRouter')
+app.use(serviceWorkerRouter)
+
+app.listen(3007,()=>{
+    console.log('server is running on port 3007')
+})
+
+// 避免系統中斷
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
