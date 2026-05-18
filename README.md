@@ -28,13 +28,13 @@ docker network create sky_net
 ### Ubuntu 主容器
 
 ```bash
-docker run -it --name sky --network sky_net -p 80:80 -p 443:443 -v D:\sky_docker_localDatabase:/mnt/sky_database ubuntu:22.04 bash
+docker run -it --name sky --network sky_net -p 80:80 -p 443:443 -v C:\sky_docker_localDatabase:/mnt/sky_database ubuntu:22.04 bash
 ```
 
 ### MongoDB 容器
 
 ```bash
-docker run -d --name sky_mongo --network sky_net -v D:\sky_docker_mongodb:/data/db mongo:8.0
+docker run -d --name sky_mongo --network sky_net -v C:\sky_docker_mongodb:/data/db mongo:8.0
 ```
 
 ---
@@ -82,8 +82,8 @@ docker load -i sky_image.tar
 
 ```bash
 docker network create sky_net
-docker run -d --name sky_mongo --network sky_net -v D:\sky_docker_mongodb:/data/db mongo:8.0
-docker run -it --name sky --network sky_net -p 80:80 -p 443:443 -v D:\sky_docker_localDatabase:/mnt/sky_database sky_image:latest
+docker run -d --name sky_mongo --network sky_net -v C:\sky_docker_mongodb:/data/db mongo:8.0
+docker run -it --name sky --network sky_net -p 80:80 -p 443:443 -v C:\sky_docker_localDatabase:/mnt/sky_database sky_image:latest
 ```
 
 ---
@@ -118,7 +118,7 @@ apt install -y git nano lsof
 ### 下載專案
 
 ```bash
-git clone https://github.com/SCLemon/sky_deploy.git
+git clone https://github.com/SCLemon/web_deploy.git
 ```
 
 ### 安裝專案
