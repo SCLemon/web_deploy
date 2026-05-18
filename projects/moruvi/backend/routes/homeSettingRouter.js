@@ -29,6 +29,14 @@ router.get('/api/homeSetting/getData', authMiddleware, async (req, res) => {
 
         const room = await roomModel.findOne({ roomId });
 
+        if(!room){
+            return res.send({
+                type:'error',
+                message:'用戶資料獲取失敗（查無此房間）。',
+                data: {}
+            });
+        }
+
         const usage = await getFolderSize(room.database.url);
 
         const output = {

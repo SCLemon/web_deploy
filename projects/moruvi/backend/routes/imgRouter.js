@@ -9,7 +9,7 @@ const userModel = require('../models/userModel');
 const roomModel = require('../models/roomModel');
 
 const {format} = require('date-fns');
-const { uuid } = require('uuidv4');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const authMiddleware = require('../middleware/auth.middleware')
 // const { checkUsageMemory } = require('../middleware/checkUsageMemory.middleware')
@@ -27,7 +27,7 @@ if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
 router.post('/api/img/updateUserAvator',authMiddleware,upload.fields([{ name: 'attachments', maxCount: 1}]),autoCleanupTmp, async (req, res) => {
     
     // 本次專屬 id
-    const key = uuid();
+    const key = uuidv4();
 
     const token = req.headers['x-user-token']
     

@@ -7,7 +7,7 @@ const router = express.Router();
 const roomModel = require('../models/roomModel');
 
 const {format} = require('date-fns');
-const { uuid } = require('uuidv4');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const authMiddleware = require('../middleware/auth.middleware');
 const subscribeModel = require('../models/subscribeModel');
@@ -239,7 +239,7 @@ async function recordNotification(from, title, subTitle, content, to){
     
         const record = {
             createTime: format(new Date(), 'yyyy.MM.dd HH:mm:ss'),
-            idx: uuid(),
+            idx: uuidv4(),
             title,
             subTitle,
             content,
@@ -253,8 +253,8 @@ async function recordNotification(from, title, subTitle, content, to){
             })
         }
         else {
-            // 只保留最近的 100 筆記錄
-            if(target.list.length >= 100){
+            // 只保留最近的 250 筆記錄
+            if(target.list.length >= 250){
                 target.list.shift();
             }
             target.list.push(record);
@@ -269,4 +269,6 @@ async function recordNotification(from, title, subTitle, content, to){
 }
 
 
-module.exports = router;
+module.exports = {
+    router, recordNotification
+};

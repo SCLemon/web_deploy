@@ -9,7 +9,7 @@ const mileStoneModel = require('../models/mileStoneModel');
 const roomModel = require('../models/roomModel');
 
 const { format } = require('date-fns');
-const { uuid } = require('uuidv4');
+const { v4: uuidv4 } = require('uuid');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -69,7 +69,7 @@ router.post('/api/milestone/add', authMiddleware, async (req, res) => {
         date = format(new Date(date), 'yyyy-MM-dd');
 
         mileStoneData.list.push({
-            itemId: uuid(),
+            itemId: uuidv4(),
             date,
             event,
             icon,

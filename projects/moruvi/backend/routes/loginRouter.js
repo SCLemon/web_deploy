@@ -8,7 +8,7 @@ const userModel = require('../models/userModel');
 const roomModel = require('../models/roomModel');
 
 const {format} = require('date-fns');
-const { uuid } = require('uuidv4');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
 
@@ -31,7 +31,7 @@ function historyGenerator(req){
 // 註冊驗證
 router.post('/login/register', async (req, res) => {
 
-    const token =  uuid();
+    const token =  uuidv4();
     let { account, password, roomId } = req.body;
 
     if (!account || !password) {
@@ -52,7 +52,7 @@ router.post('/login/register', async (req, res) => {
         }
 
         if(!roomId){
-            roomId = uuid();
+            roomId = uuidv4();
             const dataBaseUrl = path.join(baseDir,'room',roomId);
 
             fs.mkdirSync(dataBaseUrl, { recursive: true });
