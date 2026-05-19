@@ -13,7 +13,6 @@ const cloudSchema = new mongoose.Schema({
             folderId:{
                 type: String,
                 trim: true,
-                unique: true,
                 required: true
             },
             folderPath:{
@@ -32,7 +31,6 @@ const cloudSchema = new mongoose.Schema({
                     fileId:{
                         type: String,
                         trim: true,
-                        unique: true,
                         required: true
                     },
                     fileName:{
