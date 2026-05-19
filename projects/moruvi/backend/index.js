@@ -51,8 +51,8 @@ app.use(mileStoneRouter);
 const overviewRouter = require('./routes/overviewRouter');
 app.use(overviewRouter);
 
-const imgRouter = require('./routes/imgRouter');
-app.use(imgRouter);
+const avatorRouter = require('./routes/avatorRouter');
+app.use(avatorRouter);
 
 const myInfoRouter = require('./routes/myInfoRouter');
 app.use(myInfoRouter);
@@ -71,6 +71,9 @@ app.use(missionRouter);
 
 const prizeRouter = require('./routes/prizeRouter');
 app.use(prizeRouter);
+
+const cloudRouter = require('./routes/cloudRouter');
+app.use(cloudRouter);
 
 app.listen(3008,()=>{
     console.log('server is running on port 3008')
