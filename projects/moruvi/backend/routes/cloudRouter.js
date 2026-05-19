@@ -13,10 +13,11 @@ const {format} = require('date-fns');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const authMiddleware = require('../middleware/auth.middleware')
-// const { checkUsageMemory } = require('../middleware/checkUsageMemory.middleware')
+
 const { upload, autoCleanupTmp } = require('../config/multer.config');
 const path = require('path');
 const { ZipArchive } = require('archiver');
+const { checkUsageMemory } = require('../middleware/checkUsageMemory.middleware');
 
 
 // 獲取資料夾列表
@@ -305,7 +306,7 @@ router.get('/api/cloud/files/:folderId', authMiddleware, async (req, res) => {
 });
 
 // 上傳檔案
-router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'attachments', maxCount: 1 }]), autoCleanupTmp, async (req, res) => {
+router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'attachments', maxCount: 1 }]), checkUsageMemory, autoCleanupTmp, async (req, res) => {
     
     // 本次專屬 id
     const uuid = uuidv4();

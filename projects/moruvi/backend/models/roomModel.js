@@ -30,7 +30,7 @@ const roomSchema = new mongoose.Schema({
         limit:{
             memory:{
                 type: Number,
-                default: 1*1024*1024 // 預設 1GB
+                default: 1*1024*1024 // kB
             }
         }
 
