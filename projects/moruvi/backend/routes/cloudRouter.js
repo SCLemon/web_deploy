@@ -19,6 +19,7 @@ const path = require('path');
 const { ZipArchive } = require('archiver');
 const { checkUsageMemory } = require('../middleware/checkUsageMemory.middleware');
 
+const mime = require('mime-types');
 
 // 獲取資料夾列表
 router.get('/api/cloud/folders', authMiddleware, async (req, res) => {
@@ -511,8 +512,12 @@ router.get('/api/cloud/downloadFile/:folderId/:fileId', authMiddleware, async (r
         const fileName = cloud.folders[folderIndex].files[fileIndex].fileName;
 
         if(fs.existsSync(filePath)){
+
+            const contentType = mime.lookup(filePath) || 'application/octet-stream';
+            res.setHeader('Content-Type', contentType);
+
             res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
-            res.setHeader('Content-Type', 'application/octet-stream');
+            
             const fileStream = fs.createReadStream(filePath);
             fileStream.pipe(res);
         } else {
