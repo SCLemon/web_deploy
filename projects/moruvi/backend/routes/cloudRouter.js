@@ -339,19 +339,27 @@ router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'atta
 
         fs.renameSync(file.path, newFilePath);
 
-        cloud.folders[folderIndex].files.push({
+        const createTime = format(new Date(), 'yyyy/MM/dd HH:mm:ss')
+        const meta = {
             fileId: uuid,
             fileName: file.originalname,
             fileSize: file.size,
             filePath: newFilePath,
-            createTime: format(new Date(), 'yyyy/MM/dd HH:mm:ss'),
-        });
+            createTime: createTime,
+        }
+
+        cloud.folders[folderIndex].files.push(meta);
 
         await cloud.save();
 
         return res.send({
             type:'success',
-            message:'檔案上傳成功。'
+            message:'檔案上傳成功。',
+            data:{
+                fileId: uuid,
+                fileName: file.originalname,
+                createTime: format(new Date(), 'yyyy/MM/dd'),
+            }
         });
     } catch (e) {
         console.log(e);
