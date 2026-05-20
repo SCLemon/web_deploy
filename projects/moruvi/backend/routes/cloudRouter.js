@@ -113,7 +113,7 @@ router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
             data: {
                 folderId: uuid,
                 folderName,
-                createTime,
+                createTime: format(createTime, 'yyyy/MM/dd'),
             }
         });
     } catch (e) {
