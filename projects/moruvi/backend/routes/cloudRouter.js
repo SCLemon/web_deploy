@@ -94,8 +94,9 @@ router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
             });
         }
 
+        const createTime = format(new Date(), 'yyyy/MM/dd HH:mm:ss');
         cloud.folders.push({
-            createTime: format(new Date(), 'yyyy/MM/dd HH:mm:ss'),
+            createTime,
             folderId: uuid,
             folderPath: newFolderPath,
             folderName,
@@ -104,9 +105,16 @@ router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
 
         await cloud.save();
 
+   
+
         return res.send({
             type:'success',
-            message:'資料夾創建成功。'
+            message:'資料夾創建成功。',
+            data: {
+                folderId: uuid,
+                folderName,
+                createTime,
+            }
         });
     } catch (e) {
         console.log(e);
@@ -182,7 +190,11 @@ router.put('/api/cloud/renameFolder', authMiddleware, async (req, res) => {
 
         return res.send({
             type:'success',
-            message:'資料夾名稱更新成功。'
+            message:'資料夾名稱更新成功。',
+            data:{
+                folderId,
+                folderName,
+            }
         });
     } catch (e) {
         console.log(e);
@@ -348,9 +360,23 @@ router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'atta
             createTime: createTime,
         }
 
-        cloud.folders[folderIndex].files.push(meta);
+        const updatedCloud = await cloudModel.findOneAndUpdate(
+            { 
+                roomId: room.roomId, 
+                "folders.folderId": folderId 
+            },
+            { 
+                $push: { "folders.$.files": meta } 
+            },
+            { 
+                new: true,          // 回傳更新後的資料（若後續需要比對的話）
+                runValidators: true // 同步執行 Schema 驗證
+            }
+        );
 
-        await cloud.save();
+        if (!updatedCloud) {
+            return res.send({ type: 'error', message: '儲存檔案失敗，資料夾可能已被刪除。' });
+        }
 
         return res.send({
             type:'success',
@@ -447,7 +473,11 @@ router.put('/api/cloud/renameFile', authMiddleware, async (req, res) => {
 
         return res.send({
             type:'success',
-            message:'檔案名稱更新成功。'
+            message:'檔案名稱更新成功。',
+            data:{
+                fileId,
+                fileName: newFileName,
+            }
         });
     } catch (e) {
         console.log(e);
