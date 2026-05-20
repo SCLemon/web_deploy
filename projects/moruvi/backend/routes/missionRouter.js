@@ -56,9 +56,22 @@ router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
                 .then(m => m?.postMission ?? [])
         ]);
 
-        const mergedList = [
-            ...partnerPostMissionList,
-            ...myPostMissionList
+
+        // 已完成與已駁回的拆分出來
+        const endList = [
+            ...myPostMissionList.filter(m => m.status === '已完成' || m.status === '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
+            ...partnerPostMissionList.filter(m => m.status === '已完成' || m.status === '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
+        ]
+
+        const notEndList = [
+            ...myPostMissionList.filter(m => m.status !== '已完成' && m.status !== '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
+            ...partnerPostMissionList.filter(m => m.status !== '已完成' && m.status !== '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
+        ]
+
+
+        let mergedList = [
+            ...notEndList,
+            ...endList
         ]
         .map(m => ({
             itemId: m.itemId,
@@ -68,8 +81,8 @@ router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
             description: m.description,
             status: m.status,
             isMine: m.creator === user.token
-        }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
+        }));
+
 
         return res.send({
                 type:'success',

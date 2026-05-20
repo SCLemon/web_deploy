@@ -89,8 +89,8 @@ router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
         ]);
 
         const mergedList = [
-            ...partnerPostPrizeList,
-            ...myPostPrizeList
+            ...myPostPrizeList.sort((a, b) => a.money - b.money),
+            ...partnerPostPrizeList.sort((a, b) => a.money - b.money),
         ]
         .map(m => ({
             itemId: m.itemId,
@@ -99,7 +99,7 @@ router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
             description: m.description,
             isMine: m.creator === user.token
         }))
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        
 
         return res.send({
                 type:'success',
