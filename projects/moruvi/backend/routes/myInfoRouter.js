@@ -77,6 +77,12 @@ router.put('/api/myInfo/modifyData', authMiddleware, async (req, res) => {
         return res.send({
             type:'success',
             message:'用戶資料修改成功。',
+            data:{
+                account: user.account,
+                password: password,
+                name: name,
+                mailAddress: mailAddress
+            }
         });
 
     } catch (e) {

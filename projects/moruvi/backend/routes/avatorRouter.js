@@ -53,8 +53,9 @@ router.post('/api/img/updateUserAvator',authMiddleware,upload.fields([{ name: 'a
 
         fs.renameSync(file.path, originalPath);
 
+        const newUrl = `/api/img/getUserAvator/${filename}`
         user.userImgUrl = {
-            url: `/api/img/getUserAvator/${filename}`,
+            url: newUrl,
             original: originalPath
         }
 
@@ -63,7 +64,8 @@ router.post('/api/img/updateUserAvator',authMiddleware,upload.fields([{ name: 'a
 
         return res.send({
             type:'success',
-            message:'頭像上傳成功。'
+            message:'頭像上傳成功。',
+            userImgUrl: newUrl
         });
     } catch (e) {
         console.log(e);
