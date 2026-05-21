@@ -55,6 +55,8 @@ router.get('/api/prize/getUserInfo', authMiddleware, async (req, res) => {
 // 獲取商品列表
 router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
 
+    const isMineList = req.query.isMineList === 'true';
+
     try {
         const user = await userModel.findOne({token: req.headers['x-user-token']});
     
@@ -80,19 +82,20 @@ router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
 
         const partnerToken = room.owners.find(owner => owner !== user.token);
         
-        const [partnerPostPrizeList, myPostPrizeList] = await Promise.all([
-            prizeModel.findOne({ token: partnerToken })
-                .then(m => m?.postPrize ?? []),
+        let targetList = [];
 
-            prizeModel.findOne({ token: user.token })
-                .then(m => m?.postPrize ?? [])
-        ]);
+        if(isMineList){
+            const myPrize = await prizeModel.findOne({ token: user.token });
+            targetList = myPrize?.postPrize ?? [];
 
-        const mergedList = [
-            ...myPostPrizeList.sort((a, b) => a.money - b.money),
-            ...partnerPostPrizeList.sort((a, b) => a.money - b.money),
-        ]
-        .map(m => ({
+        }
+        else{
+            const partnerPrize = await prizeModel.findOne({ token: partnerToken });
+            targetList = partnerPrize?.postPrize ?? [];
+        }
+    
+        
+        targetList = targetList.sort((a, b) => a.money - b.money).map(m => ({
             itemId: m.itemId,
             money: m.money,
             title: m.title,
@@ -104,7 +107,7 @@ router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
         return res.send({
                 type:'success',
                 message:'商品資料獲取成功。',
-                data: mergedList || [],
+                data: targetList || [],
             });
 
     } catch (e) {
@@ -301,7 +304,7 @@ router.delete('/api/prize/removePrize/:itemId', authMiddleware, async (req, res)
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -342,7 +345,7 @@ router.post('/api/prize/purchase', authMiddleware, async (req, res) => {
     const { itemId } = req.body;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -436,7 +439,7 @@ router.get('/api/prize/completePrize/:itemId', authMiddleware, async (req, res) 
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -488,7 +491,7 @@ router.get('/api/prize/cancelPrize/:itemId', authMiddleware, async (req, res) =>
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -541,7 +544,7 @@ router.get('/api/prize/cancelPrize/:itemId', authMiddleware, async (req, res) =>
 
 async function notifyPrize(req, title, subTitle, content) {
     try{
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return {

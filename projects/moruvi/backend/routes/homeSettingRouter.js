@@ -15,7 +15,7 @@ const { getFolderSize } = require('../middleware/checkUsageMemory.middleware')
 router.get('/api/homeSetting/getData', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
 
         if(!user){
             return res.send({
@@ -37,7 +37,7 @@ router.get('/api/homeSetting/getData', authMiddleware, async (req, res) => {
             });
         }
 
-        const usage = await getFolderSize(room.database.url);
+        const usage = getFolderSize(room.database.url);
 
         const output = {
             roomId: room.roomId,
@@ -69,7 +69,7 @@ router.put('/api/homeSetting/modifyData', authMiddleware, async (req, res) => {
     const { roomName, locked } = req.body;
     
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
 
         if(!user){
             return res.send({

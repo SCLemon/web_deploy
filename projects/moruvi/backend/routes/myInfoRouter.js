@@ -8,11 +8,13 @@ const userModel = require('../models/userModel');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
+const { tokenCache } = require('../cache/cache');
+
 // 獲取資料
 router.get('/api/myInfo/getData', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
 
         if(!user){
             return res.send({
@@ -70,6 +72,7 @@ router.put('/api/myInfo/modifyData', authMiddleware, async (req, res) => {
         user.detail.mailAddress = mailAddress;
 
         await user.save();
+        tokenCache.delete(user.token);
         
         return res.send({
             type:'success',

@@ -18,7 +18,6 @@ const path = require('path');
 function historyGenerator(req){
     return {
         recordingTime: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-        fingerprint: req.headers['x-user-fingerprint'],
         ip: req.headers['cf-connecting-ip'],
         country: req.headers['cf-ipcountry'],
         city: req.headers['cf-ipcity'],
@@ -174,37 +173,59 @@ router.post('/login/verify', async (req, res) => {
     }
 });
 
+
 // token 驗證
+const { tokenCache } = require('../cache/cache');
+
 router.post('/login/token', async (req, res) => {
-    const token = req.headers['x-user-token']
+    const token = req.headers['x-user-token'];
     const save = req.body.save;
+
+    let cachedUser = tokenCache.get(token);
+
+    if (!save && cachedUser) {
+        return res.send({ type: 'success', message: '登入成功！', showAlert: false });
+    }
+
     try {
-        const user = await userModel.findOne({ token });
-        if (!user) {
-            return res.send({type:'error', message:'無效使用者，請重新登入', showAlert:true});
+        let user;
+
+        if (save) {
+            const loginTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+            const history = historyGenerator(req);
+
+            user = await userModel.findOneAndUpdate(
+                { token },
+                { 
+                    $set: { lastOnline: loginTime },
+                    $push: { 
+                        historyRecord: { 
+                            $each: [history],
+                            $slice: -100 
+                        } 
+                    }
+                },
+                { new: true }
+            ).lean();
+
+            if (!user) {
+                return res.send({ type: 'error', message: '無效使用者，請重新登入', showAlert: true });
+            }
+        } 
+        else {
+            user = await userModel.findOne({ token }).lean();
+            if (!user) {
+                return res.send({ type: 'error', message: '無效使用者，請重新登入', showAlert: true });
+            }
         }
-  
-        const loginTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
-        user.lastOnline = loginTime;
 
-        // 使用者歷史資訊
-        const history = historyGenerator(req);
+        tokenCache.set(token, user);
 
-        user.historyRecord = [
-            ...(user.historyRecord || []),
-            history
-        ].slice(-100);
-
-        if(save) await user.save();
-
-        return res.send({
-            type:'success',
-            message:'登入成功！',
-            showAlert: false
-        });
+        return res.send({ type: 'success', message: '登入成功！', showAlert: false });
     } 
     catch (e) {
-        return res.send({type:'error', message:'伺服器錯誤' ,showAlert:true});
+        console.error(e);
+        return res.send({ type: 'error', message: '伺服器錯誤', showAlert: true });
     }
 });
 

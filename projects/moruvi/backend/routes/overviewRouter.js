@@ -25,7 +25,15 @@ router.get('/api/overview/getData', authMiddleware, async (req, res) => {
     };
     
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
+
+        if(!user){
+            return res.send({
+                type:'error',
+                message:'概覽資料獲取失敗（查無此用戶）。',
+                data: {}
+            });
+        }
 
         output.user.name = user.name;
         output.user.memberNo = user.memberNo;
@@ -56,7 +64,5 @@ router.get('/api/overview/getData', authMiddleware, async (req, res) => {
         });
     }
 });
-
-// 上傳頭貼
 
 module.exports = router;

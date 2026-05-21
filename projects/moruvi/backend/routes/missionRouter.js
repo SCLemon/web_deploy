@@ -23,8 +23,10 @@ const { pushNotification } = require('./service-worker/serviceWorker');
 // 獲取任務接取清單
 router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
 
+    const isMineList = req.query.isMineList === 'true';
+
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -48,48 +50,36 @@ router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
 
         const partnerToken = room.owners.find(owner => owner !== user.token);
         
-        const [partnerPostMissionList, myPostMissionList] = await Promise.all([
-            missionModel.findOne({ token: partnerToken })
-                .then(m => m?.postMission ?? []),
+        let targetList = [];
 
-            missionModel.findOne({ token: user.token })
-                .then(m => m?.postMission ?? [])
-        ]);
-
-
+        if(isMineList){
+            const myMission = await missionModel.findOne({ token: user.token });
+            targetList = myMission?.postMission ?? [];
+        }
+        else{
+            const partnerMission = await missionModel.findOne({ token: partnerToken });
+            targetList = partnerMission?.postMission ?? [];
+        }
+        
         // 已完成與已駁回的拆分出來
-        const endList = [
-            ...myPostMissionList.filter(m => m.status === '已完成' || m.status === '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
-            ...partnerPostMissionList.filter(m => m.status === '已完成' || m.status === '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
-        ]
+        const endList = targetList.filter(m => m.status === '已完成' || m.status === '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date));
+        const notEndList = targetList.filter(m => m.status !== '已完成' && m.status !== '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        const notEndList = [
-            ...myPostMissionList.filter(m => m.status !== '已完成' && m.status !== '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
-            ...partnerPostMissionList.filter(m => m.status !== '已完成' && m.status !== '已駁回').sort((a, b) => new Date(b.date) - new Date(a.date)),
-        ]
-
-
-        let mergedList = [
-            ...notEndList,
-            ...endList
-        ]
-        .map(m => ({
+        const output = [...notEndList, ...endList].map(m => ({
             itemId: m.itemId,
             date: m.date,
             money: m.money,
             title: m.title,
             description: m.description,
             status: m.status,
-            isMine: m.creator === user.token
+            isMine: m.creator === user.token,
         }));
 
-
         return res.send({
-                type:'success',
-                message:'任務資料獲取成功。',
-                data: mergedList || [],
-            });
-
+            type:'success',
+            message:'任務資料獲取成功。',
+            data: output || [],
+        });
 
     } catch (e) {
         console.log(e)
@@ -144,7 +134,7 @@ router.get('/api/mission/getSpecificMission/:itemId', authMiddleware, async (req
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -223,7 +213,7 @@ router.post('/api/mission/postMission', authMiddleware, async (req, res) => {
             });
         }
 
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
     
         if(!user){
             return res.send({
@@ -274,8 +264,8 @@ router.delete('/api/mission/removeMission/:itemId', authMiddleware, async (req, 
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return res.send({
                 type:'error',
@@ -324,8 +314,8 @@ router.post('/api/mission/handleMission', authMiddleware, async (req, res) => {
     const { action, itemId } = req.body; // 'approve' 或 'reject'
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return res.send({
                 type:'error',
@@ -418,8 +408,8 @@ router.get('/api/mission/completeMission/:itemId', authMiddleware, async (req, r
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return res.send({
                 type:'error',
@@ -481,8 +471,8 @@ router.get('/api/mission/cancelMission/:itemId', authMiddleware, async (req, res
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return res.send({
                 type:'error',
@@ -546,8 +536,8 @@ router.get('/api/mission/allocateMoney/:itemId', authMiddleware, async (req, res
     const { itemId } = req.params;
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return res.send({
                 type:'error',
@@ -630,8 +620,8 @@ router.get('/api/mission/allocateMoney/:itemId', authMiddleware, async (req, res
 
 async function notifyMission(req, title, subTitle, content) {
     try{
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-    
+        const user = req.user;
+
         if(!user){
             return {
                 type:'error',

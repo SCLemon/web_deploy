@@ -17,7 +17,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 router.get('/api/milestone/getData', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
 
         const roomId = user.roomId;
 
@@ -52,8 +52,7 @@ router.get('/api/milestone/getData', authMiddleware, async (req, res) => {
 router.post('/api/milestone/add', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-
+        const user = req.user;
         const roomId = user.roomId;
 
         let { date, event, icon } = req.body;
@@ -94,8 +93,7 @@ router.post('/api/milestone/add', authMiddleware, async (req, res) => {
 router.delete('/api/milestone/remove/:itemId', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-
+        const user = req.user;
         const roomId = user.roomId;
 
         let { itemId } = req.params;
@@ -116,7 +114,7 @@ router.delete('/api/milestone/remove/:itemId', authMiddleware, async (req, res) 
             message:'戀愛日誌刪除成功。',
         });
 
-    } catch (e ) {
+    } catch (e) {
         console.log(e)
         return res.send({
             type:'error',
@@ -129,7 +127,7 @@ router.delete('/api/milestone/remove/:itemId', authMiddleware, async (req, res) 
 router.put('/api/milestone/edit', authMiddleware, async (req, res) => {
 
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
+        const user = req.user;
 
         const roomId = user.roomId;
 
@@ -177,83 +175,86 @@ router.put('/api/milestone/edit', authMiddleware, async (req, res) => {
 
 // 獲取 roomInfo
 router.get('/api/milestone/getRoomInfo', authMiddleware, async (req, res) => {
-
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
-
+        
+        const user = req.user; 
         const roomId = user.roomId;
 
         const room = await roomModel.findOne({ roomId });
-
-        let owners = [];
-
-        for(var i =0; i<room.owners.length; i++){
-            const ownerData = await userModel.findOne({ token: room.owners[i] });
-            if(ownerData){
-                owners.push({
-                    token: ownerData.token,
-                    name: ownerData.name,
-                    userImgUrl: ownerData.userImgUrl.url,
-                });
-            }
+        if (!room) {
+            return res.send({ type: 'error', message: '找不到該房間資訊。' });
         }
 
-        owners.sort((a, b) => a.token === user.token ? -1 : 1).map(({ token, ...rest }) => rest); // 將自己排在第一位
         
+        const ownersData = await userModel.find(
+            { token: { $in: room.owners } },
+            'token name userImgUrl.url'
+        ).lean();
+
+        const formattedOwners = ownersData.map(owner => ({
+                token: owner.token,
+                name: owner.name,
+                userImgUrl: owner.userImgUrl?.url || '',
+            }))
+            .sort((a, b) => (a.token === user.token ? -1 : 1))
+            .map(({ token, ...rest }) => rest);
+
         return res.send({
-            type:'success',
-            message:'房間資訊獲取成功。',
+            type: 'success',
+            message: '房間資訊獲取成功。',
             data: {
                 roomId,
                 locked: room.locked,
-                owners,
+                owners: formattedOwners,
             }
         });
 
     } 
     catch (e) {
-        console.log(e)
+        console.error(e);
         return res.send({
-            type:'error',
-            message:'伺服器錯誤，請洽客服人員協助。'
+            type: 'error',
+            message: '伺服器錯誤，請洽客服人員協助。'
         });
     }
 });
-
 // 修改房間鎖定狀態
 router.put('/api/milestone/toggleLock', authMiddleware, async (req, res) => {
-
     try {
-        const user = await userModel.findOne({token: req.headers['x-user-token']});
 
+        const user = req.user;
         const roomId = user.roomId;
 
-        const room = await roomModel.findOne({ roomId });
+        const updatedRoom = await roomModel.findOneAndUpdate(
+            { 
+                roomId, 
+                owners: user.token
+            },
+            [{ $set: { locked: { $not: "$locked" } } }],
+            { new: true }
+        ).lean();
 
-        if(!room.owners.includes(user.token)){
+        if (!updatedRoom) {
             return res.send({
-                type:'error',
-                message:'您沒有權限修改房間鎖定狀態。'
+                type: 'error',
+                message: '修改失敗，找不到房間或您沒有修改權限。'
             });
         }
 
-        room.locked = !room.locked;
-        await room.save();
-
         return res.send({
-            type:'success',
-            message:'房間鎖定狀態修改成功。',
+            type: 'success',
+            message: '房間鎖定狀態修改成功。',
             data: {
-                locked: room.locked,
+                locked: updatedRoom.locked,
             }
         });
 
     } 
     catch (e) {
-        console.log(e)
+        console.error(e);
         return res.send({
-            type:'error',
-            message:'伺服器錯誤，請洽客服人員協助。'
+            type: 'error',
+            message: '伺服器錯誤，請洽客服人員協助。'
         });
     }
 });
