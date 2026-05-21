@@ -107,6 +107,11 @@ router.put('/api/homeSetting/modifyData', authMiddleware, async (req, res) => {
         return res.send({
             type: 'success',
             message: '房間資料修改成功。',
+            data:{
+                roomId,
+                roomName,
+                locked: Boolean(locked)
+            }
         });
 
     } catch (e) {
