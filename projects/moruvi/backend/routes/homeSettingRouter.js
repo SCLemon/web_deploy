@@ -70,41 +70,50 @@ router.put('/api/homeSetting/modifyData', authMiddleware, async (req, res) => {
     
     try {
         const user = req.user;
-
-        if(!user){
-            return res.send({
-                type:'error',
-                message:'用戶資料獲取失敗（查無此用戶）。',
-            });
+        if (!user) {
+            return res.send({ type: 'error', message: '用戶資料獲取失敗（查無此用戶）。' });
         }
 
-        const isEmpty = Object.values({roomName, locked}).some(value => value == null || String(value).trim() === '');
-        if(isEmpty){
+        const isEmpty = [roomName, locked].some(value => value == null || String(value).trim() === '');
+        if (isEmpty) {
             return res.send({
-                type:'success',
-                message:'用戶資料修改失敗（資料不可為空）。',
+                type: 'error',
+                message: '用戶資料修改失敗（資料不可為空）。',
             });
         }
 
         const roomId = user.roomId;
 
-        const room = await roomModel.findOne({ roomId });
+        const updateResult = await roomModel.updateOne(
+            { 
+                roomId, 
+                owners: user.token 
+            },
+            { 
+                $set: { 
+                    roomName, 
+                    locked: Boolean(locked)
+                } 
+            }
+        );
 
-        room.roomName = roomName;
-        room.locked = locked;
-
-        await room.save();
+        if (updateResult.matchedCount === 0) {
+            return res.send({
+                type: 'error',
+                message: '房間資料修改失敗，找不到房間或您沒有修改權限。'
+            });
+        }
 
         return res.send({
-            type:'success',
-            message:'房間資料修改成功。',
+            type: 'success',
+            message: '房間資料修改成功。',
         });
 
     } catch (e) {
-        console.log(e)
+        console.error(e);
         return res.send({
-            type:'error',
-            message:'伺服器錯誤，請洽客服人員協助。'
+            type: 'error',
+            message: '伺服器錯誤，請洽客服人員協助。'
         });
     }
 });
