@@ -6,7 +6,6 @@ const express = require('express');
 const router = express.Router();
 
 const userModel = require('../models/userModel');
-const roomModel = require('../models/roomModel');
 
 const {format} = require('date-fns');
 const { v4: uuidv4 } = require('uuid');

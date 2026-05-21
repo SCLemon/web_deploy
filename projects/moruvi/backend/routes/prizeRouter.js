@@ -15,6 +15,7 @@ const { format } = require('date-fns');
 const authMiddleware = require('../middleware/auth.middleware');
 const { recordNotification } = require('./notifyRouter');
 const { pushNotification } = require('./service-worker/serviceWorker');
+const roomMiddleware = require('../middleware/room.middleware');
 
 // 獲取用戶資訊
 router.get('/api/prize/getUserInfo', authMiddleware, async (req, res) => {
@@ -53,7 +54,7 @@ router.get('/api/prize/getUserInfo', authMiddleware, async (req, res) => {
 });
 
 // 獲取商品列表
-router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
+router.get('/api/prize/getPrizeList', authMiddleware, roomMiddleware, async (req, res) => {
 
     const isMineList = req.query.isMineList === 'true';
 
@@ -68,9 +69,7 @@ router.get('/api/prize/getPrizeList', authMiddleware, async (req, res) => {
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -159,7 +158,7 @@ router.get('/api/prize/getPurchasedList', authMiddleware, async (req, res) => {
 });
 
 // 獲取特定商品的詳細資料
-router.get('/api/prize/getSpecificPrize/:itemId', authMiddleware, async (req, res) => {
+router.get('/api/prize/getSpecificPrize/:itemId', authMiddleware, roomMiddleware, async (req, res) => {
     const { itemId } = req.params;
 
     try {
@@ -174,9 +173,7 @@ router.get('/api/prize/getSpecificPrize/:itemId', authMiddleware, async (req, re
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -340,7 +337,7 @@ router.delete('/api/prize/removePrize/:itemId', authMiddleware, async (req, res)
 });
 
 // 購買商品
-router.post('/api/prize/purchase', authMiddleware, async (req, res) => {
+router.post('/api/prize/purchase', authMiddleware, roomMiddleware, async (req, res) => {
 
     const { itemId } = req.body;
 
@@ -355,9 +352,7 @@ router.post('/api/prize/purchase', authMiddleware, async (req, res) => {
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -487,7 +482,7 @@ router.get('/api/prize/completePrize/:itemId', authMiddleware, async (req, res) 
 });
 
 // 商品退款
-router.get('/api/prize/cancelPrize/:itemId', authMiddleware, async (req, res) => {
+router.get('/api/prize/cancelPrize/:itemId', authMiddleware, roomMiddleware, async (req, res) => {
     const { itemId } = req.params;
 
     try {
@@ -553,9 +548,7 @@ async function notifyPrize(req, title, subTitle, content) {
             };
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return {

@@ -12,6 +12,9 @@ const { format } = require('date-fns');
 const { v4: uuidv4 } = require('uuid');
 
 const authMiddleware = require('../middleware/auth.middleware');
+const roomMiddleware = require('../middleware/room.middleware');
+
+const { roomCache } = require('../cache/cache');
 
 // 獲取資料
 router.get('/api/milestone/getData', authMiddleware, async (req, res) => {
@@ -218,8 +221,9 @@ router.get('/api/milestone/getRoomInfo', authMiddleware, async (req, res) => {
         });
     }
 });
+
 // 修改房間鎖定狀態
-router.put('/api/milestone/toggleLock', authMiddleware, async (req, res) => {
+router.put('/api/milestone/toggleLock', authMiddleware, roomMiddleware, async (req, res) => {
     try {
 
         const user = req.user;
@@ -240,6 +244,8 @@ router.put('/api/milestone/toggleLock', authMiddleware, async (req, res) => {
                 message: '修改失敗，找不到房間或您沒有修改權限。'
             });
         }
+
+        roomCache.delete(roomId);
 
         return res.send({
             type: 'success',

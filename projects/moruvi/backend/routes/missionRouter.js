@@ -17,11 +17,12 @@ const prizeModel = require('../models/prizeModel');
 
 const { recordNotification } = require('./notifyRouter');
 const { pushNotification } = require('./service-worker/serviceWorker');
+const roomMiddleware = require('../middleware/room.middleware');
 
 // 待批准、已批准、已駁回、待撥款、已完成
 
 // 獲取任務接取清單
-router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
+router.get('/api/mission/waitToGet', authMiddleware, roomMiddleware, async (req, res) => {
 
     const isMineList = req.query.isMineList === 'true';
 
@@ -36,9 +37,7 @@ router.get('/api/mission/waitToGet', authMiddleware, async (req, res) => {
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -130,7 +129,7 @@ router.get('/api/mission/getMissionList', authMiddleware, async (req, res) => {
 });
 
 // 獲取特定任務的詳細資料
-router.get('/api/mission/getSpecificMission/:itemId', authMiddleware, async (req, res) => {
+router.get('/api/mission/getSpecificMission/:itemId', authMiddleware, roomMiddleware, async (req, res) => {
     const { itemId } = req.params;
 
     try {
@@ -144,9 +143,7 @@ router.get('/api/mission/getSpecificMission/:itemId', authMiddleware, async (req
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -324,9 +321,7 @@ router.post('/api/mission/handleMission', authMiddleware, async (req, res) => {
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -531,7 +526,7 @@ router.get('/api/mission/cancelMission/:itemId', authMiddleware, async (req, res
 });
 
 // 確認撥款
-router.get('/api/mission/allocateMoney/:itemId', authMiddleware, async (req, res) => {
+router.get('/api/mission/allocateMoney/:itemId', authMiddleware, roomMiddleware, async (req, res) => {
     
     const { itemId } = req.params;
 
@@ -545,9 +540,7 @@ router.get('/api/mission/allocateMoney/:itemId', authMiddleware, async (req, res
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -629,9 +622,7 @@ async function notifyMission(req, title, subTitle, content) {
             };
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return {

@@ -14,6 +14,7 @@ const subscribeModel = require('../models/subscribeModel');
 const userModel = require('../models/userModel');
 const { pushNotification } = require('./service-worker/serviceWorker');
 const notificationModel = require('../models/notificationModel');
+const roomMiddleware = require('../middleware/room.middleware');
 
 
 // 獲取通知資料
@@ -158,13 +159,13 @@ router.post('/api/notify/markRead',authMiddleware, async (req, res) => {
 });
 
 // 戳戳對方
-router.get('/api/notify/poke',authMiddleware, async (req, res) => {
+router.get('/api/notify/poke',authMiddleware, roomMiddleware, async (req, res) => {
     
     const token = req.headers['x-user-token']
     
     try {
        
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -195,7 +196,7 @@ router.get('/api/notify/poke',authMiddleware, async (req, res) => {
 });
 
 // 傳送訊息
-router.post('/api/notify/sendMessage',authMiddleware, async (req, res) => {
+router.post('/api/notify/sendMessage',authMiddleware, roomMiddleware, async (req, res) => {
     
     const { title, content } = req.body;
 
@@ -203,7 +204,7 @@ router.post('/api/notify/sendMessage',authMiddleware, async (req, res) => {
     
     try {
        
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
 
         if(!room){
             return res.send({

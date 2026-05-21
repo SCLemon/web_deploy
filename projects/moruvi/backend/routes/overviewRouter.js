@@ -5,12 +5,12 @@ const express = require('express');
 const router = express.Router();
 
 const userModel = require('../models/userModel');
-const roomModel = require('../models/roomModel');
 
 const authMiddleware = require('../middleware/auth.middleware');
+const roomMiddleware = require('../middleware/room.middleware');
 
 // 獲取資料
-router.get('/api/overview/getData', authMiddleware, async (req, res) => {
+router.get('/api/overview/getData', authMiddleware, roomMiddleware, async (req, res) => {
     let output = {
         user:{
             name:'',
@@ -39,9 +39,7 @@ router.get('/api/overview/getData', authMiddleware, async (req, res) => {
         output.user.memberNo = user.memberNo;
         output.user.userImgUrl = user.userImgUrl.url;
 
-        const roomId = user.roomId;
-
-        let roomData = await roomModel.findOne({ roomId });
+        let roomData = req.room;
         
         output.roomInfo.createTime = roomData.createTime;
         output.roomInfo.roomName = roomData.roomName;

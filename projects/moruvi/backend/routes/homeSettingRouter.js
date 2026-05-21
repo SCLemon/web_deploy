@@ -8,11 +8,15 @@ const userModel = require('../models/userModel');
 const roomModel = require('../models/roomModel');
 
 const authMiddleware = require('../middleware/auth.middleware');
+const roomMiddleware = require('../middleware/room.middleware');
 
-const { getFolderSize } = require('../middleware/checkUsageMemory.middleware')
+const { roomCache } = require('../cache/cache');
+
+const { getFolderSize } = require('../middleware/checkUsageMemory.middleware');
+
 
 // 獲取資料
-router.get('/api/homeSetting/getData', authMiddleware, async (req, res) => {
+router.get('/api/homeSetting/getData', authMiddleware, roomMiddleware, async (req, res) => {
 
     try {
         const user = req.user;
@@ -25,9 +29,7 @@ router.get('/api/homeSetting/getData', authMiddleware, async (req, res) => {
             });
         }
 
-        const roomId = user.roomId;
-
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
 
         if(!room){
             return res.send({
@@ -103,6 +105,8 @@ router.put('/api/homeSetting/modifyData', authMiddleware, async (req, res) => {
                 message: '房間資料修改失敗，找不到房間或您沒有修改權限。'
             });
         }
+
+        roomCache.delete(roomId);
 
         return res.send({
             type: 'success',

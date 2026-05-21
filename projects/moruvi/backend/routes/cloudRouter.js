@@ -5,28 +5,31 @@
 const express = require('express');
 const router = express.Router();
 
-const userModel = require('../models/userModel');
-const roomModel = require('../models/roomModel');
 const cloudModel = require('../models/cloudModel');
 
 const {format} = require('date-fns');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+
 const authMiddleware = require('../middleware/auth.middleware')
+const roomMiddleware = require('../middleware/room.middleware');
 
 const { upload, autoCleanupTmp } = require('../config/multer.config');
 const path = require('path');
 const { ZipArchive } = require('archiver');
 const { checkUsageMemory } = require('../middleware/checkUsageMemory.middleware');
 
+const { roomCache } = require('../cache/cache');
+
 const mime = require('mime-types');
 
+
 // 獲取資料夾列表
-router.get('/api/cloud/folders', authMiddleware, async (req, res) => {
-    const token = req.headers['x-user-token']
+router.get('/api/cloud/folders', authMiddleware, roomMiddleware, async (req, res) => {
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -59,7 +62,7 @@ router.get('/api/cloud/folders', authMiddleware, async (req, res) => {
 });
 
 // 創建資料夾
-router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
+router.post('/api/cloud/createFolder',authMiddleware, roomMiddleware, async (req, res) => {
     
     // 本次專屬 id
     const uuid = uuidv4();
@@ -78,7 +81,7 @@ router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
 
     try {
 
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         const databaseUrl = room.database.url;
@@ -127,14 +130,12 @@ router.post('/api/cloud/createFolder',authMiddleware, async (req, res) => {
 });
 
 // 刪除資料夾
-router.delete('/api/cloud/deleteFolder/:folderId', authMiddleware, async (req, res) => {
-    
-    const token = req.headers['x-user-token']
+router.delete('/api/cloud/deleteFolder/:folderId', authMiddleware, roomMiddleware, async (req, res) => {
     
     const { folderId } = req.params;
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -148,6 +149,8 @@ router.delete('/api/cloud/deleteFolder/:folderId', authMiddleware, async (req, r
 
         cloud.folders.splice(folderIndex, 1);
         await cloud.save();
+
+        roomCache.delete(room.roomId);
 
         return res.send({
             type:'success',
@@ -163,7 +166,7 @@ router.delete('/api/cloud/deleteFolder/:folderId', authMiddleware, async (req, r
 });
 
 // 更改資料夾名稱
-router.put('/api/cloud/renameFolder', authMiddleware, async (req, res) => {
+router.put('/api/cloud/renameFolder', authMiddleware, roomMiddleware, async (req, res) => {
     
     const token = req.headers['x-user-token']
     
@@ -177,7 +180,7 @@ router.put('/api/cloud/renameFolder', authMiddleware, async (req, res) => {
     }
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -207,13 +210,13 @@ router.put('/api/cloud/renameFolder', authMiddleware, async (req, res) => {
 });
 
 // 下載資料夾
-router.get('/api/cloud/downloadFolder/:folderId', authMiddleware, async (req, res) => {
+router.get('/api/cloud/downloadFolder/:folderId', authMiddleware, roomMiddleware, async (req, res) => {
 
     const token = req.headers['x-user-token'];
     const { folderId } = req.params;
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if (!room)
             return res.send({
                 type: 'error',
@@ -278,14 +281,14 @@ router.get('/api/cloud/downloadFolder/:folderId', authMiddleware, async (req, re
 });
 
 // 獲取當前資料夾下的檔案列表
-router.get('/api/cloud/files/:folderId', authMiddleware, async (req, res) => {
+router.get('/api/cloud/files/:folderId', authMiddleware, roomMiddleware, async (req, res) => {
     
     const token = req.headers['x-user-token']
     
     const { folderId } = req.params;
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -319,7 +322,7 @@ router.get('/api/cloud/files/:folderId', authMiddleware, async (req, res) => {
 });
 
 // 上傳檔案
-router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'attachments', maxCount: 1 }]), checkUsageMemory, autoCleanupTmp, async (req, res) => {
+router.post('/api/cloud/uploadFile',authMiddleware, roomMiddleware, upload.fields([{ name: 'attachments', maxCount: 1 }]), checkUsageMemory, autoCleanupTmp, async (req, res) => {
     
     // 本次專屬 id
     const uuid = uuidv4();
@@ -338,7 +341,7 @@ router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'atta
     const file = req.files.attachments[0];
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -379,6 +382,8 @@ router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'atta
             return res.send({ type: 'error', message: '儲存檔案失敗，資料夾可能已被刪除。' });
         }
 
+        roomCache.delete(room.roomId);
+
         return res.send({
             type:'success',
             message:'檔案上傳成功。',
@@ -398,14 +403,12 @@ router.post('/api/cloud/uploadFile',authMiddleware, upload.fields([{ name: 'atta
 });
 
 // 刪除檔案
-router.post('/api/cloud/deleteFile', authMiddleware, async (req, res) => {
-    
-    const token = req.headers['x-user-token']
+router.post('/api/cloud/deleteFile', authMiddleware, roomMiddleware, async (req, res) => {
     
     const { folderId, fileId } = req.body;
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -423,6 +426,8 @@ router.post('/api/cloud/deleteFile', authMiddleware, async (req, res) => {
         cloud.folders[folderIndex].files.splice(fileIndex, 1);
         await cloud.save();
 
+        roomCache.delete(room.roomId);
+
         return res.send({
             type:'success',
             message:'檔案刪除成功。'
@@ -437,7 +442,7 @@ router.post('/api/cloud/deleteFile', authMiddleware, async (req, res) => {
 });
 
 // 更改檔案名稱
-router.put('/api/cloud/renameFile', authMiddleware, async (req, res) => {
+router.put('/api/cloud/renameFile', authMiddleware, roomMiddleware, async (req, res) => {
     
     const token = req.headers['x-user-token']
     
@@ -451,7 +456,7 @@ router.put('/api/cloud/renameFile', authMiddleware, async (req, res) => {
     }
 
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
@@ -490,12 +495,12 @@ router.put('/api/cloud/renameFile', authMiddleware, async (req, res) => {
 });
 
 // 下載檔案
-router.get('/api/cloud/downloadFile/:folderId/:fileId', authMiddleware, async (req, res) => {
+router.get('/api/cloud/downloadFile/:folderId/:fileId', authMiddleware, roomMiddleware, async (req, res) => {
 
     const token = req.headers['x-user-token'];
     const { folderId, fileId } = req.params;
     try {
-        const room = await roomModel.findOne({ owners: token });
+        const room = req.room;
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
