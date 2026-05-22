@@ -15,6 +15,8 @@ const fs = require('fs');
 const { baseDir } = require('../config/pathConfig');
 const path = require('path');
 
+const { tokenCache, roomCache } = require('../cache/cache');
+
 function historyGenerator(req){
     return {
         recordingTime: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
@@ -89,6 +91,7 @@ router.post('/login/register', async (req, res) => {
                 room.owners.push(token);
                 await room.save();
             }
+            roomCache.delete(roomId)
         }
         
 
@@ -175,8 +178,6 @@ router.post('/login/verify', async (req, res) => {
 
 
 // token 驗證
-const { tokenCache } = require('../cache/cache');
-
 router.post('/login/token', async (req, res) => {
     const token = req.headers['x-user-token'];
     const save = req.body.save;

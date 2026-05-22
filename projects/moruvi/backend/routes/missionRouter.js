@@ -38,7 +38,7 @@ router.get('/api/mission/waitToGet', authMiddleware, roomMiddleware, async (req,
         }
 
         const room = req.room;
-
+        
         if(!room){
             return res.send({
                 type:'error',

@@ -33,6 +33,7 @@ router.get('/api/cloud/folders', authMiddleware, roomMiddleware, async (req, res
         if(!room) return res.send({ type:'error', message:'查無房間。'});
 
         let cloud = await cloudModel.findOne({ roomId: room.roomId });
+        
         if(!cloud){
             cloud = new cloudModel({
                 roomId: room.roomId,

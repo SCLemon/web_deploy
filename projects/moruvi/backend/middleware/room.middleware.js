@@ -6,13 +6,12 @@ const { roomCache } = require('../cache/cache');
 const roomMiddleware = async (req, res, next) => {
     const token = req.headers['x-user-token'];
 
-
     let room = roomCache.get(req.user.roomId);
 
     if (!room) {
         try {
 
-            room = await roomModel.findOne({ token }).lean(); 
+            room = await roomModel.findOne({ owners: token }).lean(); 
             
             if (!room) {
                 return res.send({ type: 'error', message: '未找到房間。' });
@@ -25,8 +24,9 @@ const roomMiddleware = async (req, res, next) => {
             return res.send({ type: 'error', message: '伺服器錯誤' });
         }
     }
-
+    
     req.room = room;
+
     next();
 };
 
