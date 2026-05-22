@@ -327,8 +327,6 @@ router.post('/api/cloud/uploadFile',authMiddleware, roomMiddleware, upload.field
     
     // 本次專屬 id
     const uuid = uuidv4();
-
-    const token = req.headers['x-user-token']
     
     const { folderId } = req.body;
 

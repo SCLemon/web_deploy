@@ -306,7 +306,7 @@ router.delete('/api/mission/removeMission/:itemId', authMiddleware, async (req, 
 });
 
 // 任務接取（批准與駁回）
-router.post('/api/mission/handleMission', authMiddleware, async (req, res) => {
+router.post('/api/mission/handleMission', authMiddleware, roomMiddleware, async (req, res) => {
 
     const { action, itemId } = req.body; // 'approve' 或 'reject'
 

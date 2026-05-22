@@ -177,13 +177,13 @@ router.put('/api/milestone/edit', authMiddleware, async (req, res) => {
 });
 
 // 獲取 roomInfo
-router.get('/api/milestone/getRoomInfo', authMiddleware, async (req, res) => {
+router.get('/api/milestone/getRoomInfo', authMiddleware, roomMiddleware, async (req, res) => {
     try {
         
         const user = req.user; 
         const roomId = user.roomId;
 
-        const room = await roomModel.findOne({ roomId });
+        const room = req.room;
         if (!room) {
             return res.send({ type: 'error', message: '找不到該房間資訊。' });
         }
