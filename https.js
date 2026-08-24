@@ -50,7 +50,7 @@ const moruviLoginProxy = createProxyMiddleware({
 
 // 1. 處理所有 /api/ 開頭的請求
 app.use('/api/', (req, res, next) => {
-    if (req.hostname === 'moruvi.sclemon1013.com') {
+    if (req.hostname === 'moruvi.sclemon.com') {
         return moruviApiProxy(req, res, next);
     }
     return skyApiProxy(req, res, next);
@@ -58,7 +58,7 @@ app.use('/api/', (req, res, next) => {
 
 // 2. 處理所有 /login/ 開頭的請求
 app.use('/login/', (req, res, next) => {
-    if (req.hostname === 'moruvi.sclemon1013.com') {
+    if (req.hostname === 'moruvi.sclemon.com') {
         return moruviLoginProxy(req, res, next);
     }
     return skyLoginProxy(req, res, next);
@@ -75,7 +75,7 @@ const moruviStatic = express.static(path.join(__dirname, 'projects', 'moruvi', '
 
 // 當請求不是 /api/ 或 /login/ 時，會流到這裡讀取前端打包檔案
 app.use((req, res, next) => {
-    if (req.hostname === 'moruvi.sclemon1013.com') {
+    if (req.hostname === 'moruvi.sclemon.com') {
         return moruviStatic(req, res, next);
     }
     return skyStatic(req, res, next);
@@ -83,7 +83,7 @@ app.use((req, res, next) => {
 
 // 萬用路由：針對 Hash 模式的根路徑 `/` 或前端重新整理時，正確回傳 index.html
 app.get('*', (req, res) => {
-    if (req.hostname === 'moruvi.sclemon1013.com') {
+    if (req.hostname === 'moruvi.sclemon.com') {
         return res.sendFile(path.join(__dirname, 'projects', 'moruvi', 'dist', 'index.html'));
     }
     return res.sendFile(path.join(__dirname, 'projects', 'skyAcademy', 'dist', 'index.html'));
